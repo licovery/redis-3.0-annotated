@@ -55,7 +55,7 @@ struct sdshdr {
     // buf 中剩余可用空间的长度
     int free;
 
-    // 数据空间
+    // 数据空间 实际上不占用内存空间sizeof(struct sdshdr) = 8
     char buf[];
 };
 
