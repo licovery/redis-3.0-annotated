@@ -195,6 +195,8 @@ static void _dictReset(dictht *ht)
  *
  * T = O(1)
  */
+
+//创建的字典是空字典，当调用dictAdd时才申请节点空间。
 dict *dictCreate(dictType *type,
         void *privDataPtr)
 {
@@ -687,9 +689,9 @@ static int dictGenericDelete(dict *d, const void *key, int nofree)
                 if (prevHe)
                     prevHe->next = he->next;
                 else
-                    d->ht[table].table[idx] = he->next;
+                    d->ht[table].table[idx] = he->next;//prevHe是NULL，证明是table[idx]第一个
 
-                // 释放调用键和值的释放函数？
+                // 根据nofree参数决定是否调用释放键和值的函数
                 if (!nofree) {
                     dictFreeKey(d, he);
                     dictFreeVal(d, he);
@@ -757,6 +759,7 @@ int _dictClear(dict *d, dictht *ht, void(callback)(void *)) {
     for (i = 0; i < ht->size && ht->used > 0; i++) {
         dictEntry *he, *nextHe;
 
+		//符合某种条件调用callback函数？
         if (callback && (i & 65535) == 0) callback(d->privdata);
 
         // 跳过空索引
@@ -954,7 +957,7 @@ dictEntry *dictNext(dictIterator *iter)
 {
     while (1) {
 
-        // 进入这个循环有两种可能：
+        // 进入这个条件有两种可能：
         // 1) 这是迭代器第一次运行
         // 2) 当前索引链表中的节点已经迭代完（NULL 为链表的表尾）
         if (iter->entry == NULL) {
@@ -1253,7 +1256,7 @@ static unsigned long rev(unsigned long v) {
  * By iterating the higher bits first, because of the inverted counter, the
  * cursor does not need to restart if the table size gets bigger, and will
  * just continue iterating with cursors that don't have '1100' at the end,
- * nor any other combination of final 4 bits already explored.
+ * nor any other combination of final 4 bits already explored. 
  *
  * Similarly when the table size shrinks over time, for example going from
  * 16 to 8, If a combination of the lower three bits (the mask for size 8
@@ -1291,19 +1294,26 @@ static unsigned long rev(unsigned long v) {
  *    为了不错过任何元素，
  *    迭代器需要返回给定桶上的所有键，
  *    以及因为扩展哈希表而产生出来的新表，
- *    所以迭代器必须在一次迭代中返回多个元素。
+ *    所以迭代器有可能在一次迭代中返回多个元素。
  * 3) The reverse cursor is somewhat hard to understand at first, but this
  *    comment is supposed to help.
  *    对游标进行翻转（reverse）的原因初看上去比较难以理解，
  *    不过阅读这份注释应该会有所帮助。
  */
+
+/*  由于hash算法的index = hash & mask，即使hash表扩展了,index相当于增加前面的位数
+ *  假设原来hash = xxxxxxx??1100  index_before = 1100  index_after = ??1100,
+ *  游标增长的方式是  001100->101100->011100->111100，总能遍历到原来就在的key，
+ *	有些遍历过的key即使在扩展后放到其他地方，但是已经遍历过了无所谓，只是会迭代多次
+ */
+
 unsigned long dictScan(dict *d,
                        unsigned long v,
                        dictScanFunction *fn,
                        void *privdata)
 {
     dictht *t0, *t1;
-    const dictEntry *de;
+    const dictEntry *de;//指针本身不是常量
     unsigned long m0, m1;
 
     // 跳过空字典
@@ -1367,11 +1377,14 @@ unsigned long dictScan(dict *d,
                 de = de->next;
             }
 
+			//假设t0->size = 16, t1->size = 64
+			//v = 1100，可以理解为001100，下面一行代码执行一遍011100,再执行一遍101100，再执行一遍111100
             /* Increment bits not covered by the smaller mask */
             v = (((v | m0) + 1) & ~m0) | (v & m0);
 
             /* Continue while bits covered by mask difference is non-zero */
         } while (v & (m0 ^ m1));
+			//     m0 ^ m1 = 110000，其实就是遍历01xxxx,10xxxx,11xxxx
     }
 
     /* Set unmasked bits so incrementing the reversed cursor
@@ -1394,6 +1407,8 @@ unsigned long dictScan(dict *d,
  *
  * T = O(N)
  */
+
+//把字典的size从0扩展也是调用这个函数
 static int _dictExpandIfNeeded(dict *d)
 {
     /* Incremental rehashing already in progress. Return. */
