@@ -2,4 +2,3 @@
 sudo apt-get install tcl
 chmod +x runtest runtest-cluster runtest-sentinel
 make test
-./runtest
