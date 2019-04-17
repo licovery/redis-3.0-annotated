@@ -1,9 +1,7 @@
 language: c
 notifications:     
   email: false
-
 sudo : true
-install : sudo apt-get install tcl
-before_install: chmod +x runtest runtest-cluster runtest-sentinel
-script : make test && ./runtest && ./runtest-cluster && ./runtest-sentinel
+before_install: chmod +x runtest-ci
+script : ./runtest-ci
 
