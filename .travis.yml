@@ -1,0 +1,4 @@
+language: C
+script : runtest runtest-cluster runtest-sentinel
+sudo : flase
+install : apt-get install tcl
