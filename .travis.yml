@@ -1,4 +1,9 @@
-language: C
-script : runtest runtest-cluster runtest-sentinel
-sudo : flase
+language: c
+notifications:     
+  email: false
+
+sudo : true
 install : apt-get install tcl
+before_install: chmod +x runtest runtest-cluster runtest-sentinel
+script : make test && ./runtest && ./runtest-cluster && ./runtest-sentinel
+
