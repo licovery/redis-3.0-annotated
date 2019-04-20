@@ -101,22 +101,21 @@ zskiplistNode *zslCreateNode(int level, double score, robj *obj) {
  * T = O(1)
  */
 zskiplist *zslCreate(void) {
-    int j;
-    zskiplist *zsl;
 
-    // 分配空间
-    zsl = zmalloc(sizeof(*zsl));
+	// 分配空间
+    zskiplist *zsl = (zskiplist *)zmalloc(sizeof(*zsl));
 
     // 设置高度和起始层数
-    zsl->level = 1;
+    zsl->level = 1;  //至少有一层
     zsl->length = 0;
 
     // 初始化表头节点
     // T = O(1)
+    //头结点的score和obj是不用的
     zsl->header = zslCreateNode(ZSKIPLIST_MAXLEVEL,0,NULL);
-    for (j = 0; j < ZSKIPLIST_MAXLEVEL; j++) {
-        zsl->header->level[j].forward = NULL;
-        zsl->header->level[j].span = 0;
+    for (int levelLoop = 0; levelLoop < ZSKIPLIST_MAXLEVEL; levelLoop++) {
+        zsl->header->level[levelLoop].forward = NULL;
+        zsl->header->level[levelLoop].span = 0;
     }
     zsl->header->backward = NULL;
 
@@ -132,7 +131,7 @@ zskiplist *zslCreate(void) {
  * T = O(1)
  */
 void zslFreeNode(zskiplistNode *node) {
-
+	//先释放node里面的obj，再释放node本身
     decrRefCount(node->obj);
 
     zfree(node);
@@ -144,7 +143,7 @@ void zslFreeNode(zskiplistNode *node) {
  * T = O(N)
  */
 void zslFree(zskiplist *zsl) {
-
+	//所有结点肯定都挂在L0层
     zskiplistNode *node = zsl->header->level[0].forward, *next;
 
     // 释放表头
@@ -178,6 +177,8 @@ void zslFree(zskiplist *zsl) {
  *
  * T = O(N)
  */
+
+//P(level) = p^(level-1) * (1 - p) 
 int zslRandomLevel(void) {
     int level = 1;
 
@@ -200,6 +201,7 @@ zskiplistNode *zslInsert(zskiplist *zsl, double score, robj *obj) {
     unsigned int rank[ZSKIPLIST_MAXLEVEL];
     int i, level;
 
+	//如果不是一个数字nan = not a number
     redisAssert(!isnan(score));
 
     // 在各个层查找节点的插入位置
@@ -222,6 +224,7 @@ zskiplistNode *zslInsert(zskiplist *zsl, double score, robj *obj) {
                 // 比对分值
                 (x->level[i].forward->score == score &&
                 // 比对成员， T = O(N)
+                //自定义的一种比较函数
                 compareStringObjects(x->level[i].forward->obj,obj) < 0))) {
 
             // 记录沿途跨越了多少个节点

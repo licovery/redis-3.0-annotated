@@ -30,16 +30,19 @@
 
 #if defined(__GNUC__)
 #include <math.h>
+//不是一个数字 NaN not a number
 #undef isnan
 #define isnan(x) \
      __extension__({ __typeof (x) __x_a = (x); \
      __builtin_expect(__x_a != __x_a, 0); })
 
+//有限的
 #undef isfinite
 #define isfinite(x) \
      __extension__ ({ __typeof (x) __x_f = (x); \
      __builtin_expect(!isnan(__x_f - __x_f), 1); })
 
+//无限的 infinity
 #undef isinf
 #define isinf(x) \
      __extension__ ({ __typeof (x) __x_i = (x); \
