@@ -759,7 +759,7 @@ int _dictClear(dict *d, dictht *ht, void(callback)(void *)) {
     for (i = 0; i < ht->size && ht->used > 0; i++) {
         dictEntry *he, *nextHe;
 
-		//符合某种条件调用callback函数？
+        //符合某种条件调用callback函数？
         if (callback && (i & 65535) == 0) callback(d->privdata);
 
         // 跳过空索引
@@ -1304,7 +1304,7 @@ static unsigned long rev(unsigned long v) {
 /*  由于hash算法的index = hash & mask，即使hash表扩展了,index相当于增加前面的位数
  *  假设原来hash = xxxxxxx??1100  index_before = 1100  index_after = ??1100,
  *  游标增长的方式是  001100->101100->011100->111100，总能遍历到原来就在的key，
- *	有些遍历过的key即使在扩展后放到其他地方，但是已经遍历过了无所谓，只是会迭代多次
+ *    有些遍历过的key即使在扩展后放到其他地方，但是已经遍历过了无所谓，只是会迭代多次
  */
 
 unsigned long dictScan(dict *d,
@@ -1377,14 +1377,14 @@ unsigned long dictScan(dict *d,
                 de = de->next;
             }
 
-			//假设t0->size = 16, t1->size = 64
-			//v = 1100，可以理解为001100，下面一行代码执行一遍011100,再执行一遍101100，再执行一遍111100
+            //假设t0->size = 16, t1->size = 64
+            //v = 1100，可以理解为001100，下面一行代码执行一遍011100,再执行一遍101100，再执行一遍111100
             /* Increment bits not covered by the smaller mask */
             v = (((v | m0) + 1) & ~m0) | (v & m0);
 
             /* Continue while bits covered by mask difference is non-zero */
         } while (v & (m0 ^ m1));
-			//     m0 ^ m1 = 110000，其实就是遍历01xxxx,10xxxx,11xxxx
+            //     m0 ^ m1 = 110000，其实就是遍历01xxxx,10xxxx,11xxxx
     }
 
     /* Set unmasked bits so incrementing the reversed cursor

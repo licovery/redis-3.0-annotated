@@ -102,7 +102,7 @@ zskiplistNode *zslCreateNode(int level, double score, robj *obj) {
  */
 zskiplist *zslCreate(void) {
 
-	// 分配空间
+    // 分配空间
     zskiplist *zsl = (zskiplist *)zmalloc(sizeof(*zsl));
 
     // 设置高度和起始层数
@@ -131,7 +131,7 @@ zskiplist *zslCreate(void) {
  * T = O(1)
  */
 void zslFreeNode(zskiplistNode *node) {
-	//先释放node里面的obj，再释放node本身
+    //先释放node里面的obj，再释放node本身
     decrRefCount(node->obj);
 
     zfree(node);
@@ -143,7 +143,7 @@ void zslFreeNode(zskiplistNode *node) {
  * T = O(N)
  */
 void zslFree(zskiplist *zsl) {
-	//所有结点肯定都挂在L0层
+    //所有结点肯定都挂在L0层
     zskiplistNode *node = zsl->header->level[0].forward, *next;
 
     // 释放表头
@@ -201,7 +201,9 @@ zskiplistNode *zslInsert(zskiplist *zsl, double score, robj *obj) {
     unsigned int rank[ZSKIPLIST_MAXLEVEL];
     int i;
 
-	//如果不是一个数字nan = not a number
+    //如果不是一个数字nan = not a number
+    //断言，以便出错后方便查看错误信息。意思是程序走到这里必须成立，如果不成立，程序就是有问题
+    //不能用if,if的意思是条件判断，assert是必定要成立，如果不成立，肯定代码逻辑出错了。
     redisAssert(!isnan(score));
 
     // 在各个层查找节点的插入位置
@@ -259,7 +261,7 @@ zskiplistNode *zslInsert(zskiplist *zsl, double score, robj *obj) {
         for (i = zsl->level; i < level; i++) {
             rank[i] = 0;
             update[i] = zsl->header;
-			// ???
+            // 感觉这行多余了，下面马上会更新这个值
             // update[i]->level[i].span = zsl->length;
         }
 
@@ -299,8 +301,8 @@ zskiplistNode *zslInsert(zskiplist *zsl, double score, robj *obj) {
 
     // 设置新节点的后退指针
     x->backward = (update[0] == zsl->header) ? NULL : update[0];
-	
-	// x是否为最后一个结点
+    
+    // x是否为最后一个结点
     if (x->level[0].forward)
         x->level[0].forward->backward = x;
     else
@@ -319,17 +321,20 @@ zskiplistNode *zslInsert(zskiplist *zsl, double score, robj *obj) {
  *
  * T = O(1)
  */
-void zslDeleteNode(zskiplist *zsl, zskiplistNode *x, zskiplistNode **update) {
-    int i;
-
+void zslDeleteNode(zskiplist *zsl, zskiplistNode *x, zskiplistNode *update[]) {
+    
     // 更新所有和被删除节点 x 有关的节点的指针，解除它们之间的关系
     // T = O(1)
-    for (i = 0; i < zsl->level; i++) {
+    for (int i = 0; i < zsl->level; i++) {
+        //如果Node x有这一层
         if (update[i]->level[i].forward == x) {
             update[i]->level[i].span += x->level[i].span - 1;
             update[i]->level[i].forward = x->level[i].forward;
-        } else {
-            update[i]->level[i].span -= 1;
+        } else {//Node X没有这一层
+            //这里应该要加一个判断吧？只有当update[i].level[i].forward != NULL时才有意义，
+            if (update[i]->level[i].forward != NULL) {
+                update[i]->level[i].span -= 1;
+            }
         }
     }
 
@@ -356,13 +361,15 @@ void zslDeleteNode(zskiplist *zsl, zskiplistNode *x, zskiplistNode **update) {
  * T_wrost = O(N^2), T_avg = O(N log N)
  */
 int zslDelete(zskiplist *zsl, double score, robj *obj) {
-    zskiplistNode *update[ZSKIPLIST_MAXLEVEL], *x;
-    int i;
+    //记录下要更新的节点
+    zskiplistNode *update[ZSKIPLIST_MAXLEVEL];
 
     // 遍历跳跃表，查找目标节点，并记录所有沿途节点
     // T_wrost = O(N^2), T_avg = O(N log N)
-    x = zsl->header;
-    for (i = zsl->level-1; i >= 0; i--) {
+    zskiplistNode *x = zsl->header;
+
+    //查找方式和插入的一样
+    for (int i = zsl->level-1; i >= 0; i--) {
 
         // 遍历跳跃表的复杂度为 T_wrost = O(N), T_avg = O(log N)
         while (x->level[i].forward &&
@@ -370,11 +377,10 @@ int zslDelete(zskiplist *zsl, double score, robj *obj) {
                 // 比对分值
                 (x->level[i].forward->score == score &&
                 // 比对对象，T = O(N)
-                compareStringObjects(x->level[i].forward->obj,obj) < 0)))
-
-            // 沿着前进指针移动
-            x = x->level[i].forward;
-
+                compareStringObjects(x->level[i].forward->obj,obj) < 0))) {
+                // 沿着前进指针移动
+                x = x->level[i].forward;
+            }
         // 记录沿途节点
         update[i] = x;
     }
@@ -384,7 +390,7 @@ int zslDelete(zskiplist *zsl, double score, robj *obj) {
      *
      * 检查找到的元素 x ，只有在它的分值和对象都相同时，才将它删除。
      */
-    x = x->level[0].forward;
+    x = x->level[0].forward;//此时x是真正找到的节点
     if (x && score == x->score && equalStringObjects(x->obj,obj)) {
         // T = O(1)
         zslDeleteNode(zsl, x, update);
@@ -476,6 +482,7 @@ zskiplistNode *zslFirstInRange(zskiplist *zsl, zrangespec *range) {
     }
 
     /* This is an inner range, so the next node cannot be NULL. */
+    //前面已经判断过存在range了
     x = x->level[0].forward;
     redisAssert(x != NULL);
 
@@ -505,6 +512,8 @@ zskiplistNode *zslLastInRange(zskiplist *zsl, zrangespec *range) {
     // T = O(1)
     if (!zslIsInRange(zsl,range)) return NULL;
 
+    //我刚开始认为从尾部查找会更好，后发现其实只有forward搜索才能用到多级索引的快速查找，从尾部查找需要O(n)
+
     // 遍历跳跃表，查找符合范围 max 项的节点
     // T_wrost = O(N), T_avg = O(log N)
     x = zsl->header;
@@ -533,7 +542,7 @@ zskiplistNode *zslLastInRange(zskiplist *zsl, zrangespec *range) {
  *
  * Min and max are inclusive, so a score >= min || score <= max is deleted.
  * 
- * min 和 max 参数都是包含在范围之内的，所以分值 >= min 或 <= max 的节点都会被删除。
+ * 如果 min 和 max 参数都是包含在范围之内的，分值 >= min 或 <= max 的节点都会被删除。
  *
  * Note that this function takes the reference to the hash table view of the
  * sorted set, in order to remove the elements from the hash table too.
@@ -581,6 +590,7 @@ unsigned long zslDeleteRangeByScore(zskiplist *zsl, zrangespec *range, dict *dic
     return removed;
 }
 
+//字典序
 unsigned long zslDeleteRangeByLex(zskiplist *zsl, zlexrangespec *range, dict *dict) {
     zskiplistNode *update[ZSKIPLIST_MAXLEVEL], *x;
     unsigned long removed = 0;

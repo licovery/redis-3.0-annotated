@@ -665,7 +665,7 @@ int compareStringObjectsWithFlags(robj *a, robj *b, int flags) {
 
     if (a == b) return 0;
 
-	// 指向字符串值，并在有需要时，将整数转换为字符串 a
+    // 指向字符串值，并在有需要时，将整数转换为字符串 a
     if (sdsEncodedObject(a)) {
         astr = a->ptr;
         alen = sdslen(astr);
@@ -674,7 +674,7 @@ int compareStringObjectsWithFlags(robj *a, robj *b, int flags) {
         astr = bufa;
     }
 
-	// 同样处理字符串 b
+    // 同样处理字符串 b
     if (sdsEncodedObject(b)) {
         bstr = b->ptr;
         blen = sdslen(bstr);
@@ -684,7 +684,7 @@ int compareStringObjectsWithFlags(robj *a, robj *b, int flags) {
     }
 
 
-	// 对比
+    // 对比
     if (flags & REDIS_COMPARE_COLL) {
         return strcoll(astr,bstr);
     } else {
