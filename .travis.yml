@@ -1,6 +1,6 @@
 language: c
 notifications:     
-  email: false
+  email: true
 sudo : true
 before_install: chmod +x runtest-ci
 script : ./runtest-ci
