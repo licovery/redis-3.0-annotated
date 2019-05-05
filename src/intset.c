@@ -300,6 +300,8 @@ static intset *intsetUpgradeAndAdd(intset *is, int64_t value) {
     // 当添加新值时，原本的 | x | y | 的数据将被新值代替
     // |  new  |   x   |   y   |   z   |
     // T = O(N)
+
+    // 这个可以刚好遍历完原理的整个数组，while (size--)
     while(length--)
         _intsetSet(is,length+prepend,_intsetGetEncoded(is,length,curenc));
 
@@ -377,6 +379,10 @@ static void intsetMoveTail(intset *is, uint32_t from, uint32_t to) {
 
     // 进行移动
     // T = O(N)
+    /* Copies the values of num bytes from the location pointed by source to the memory block pointed by destination. 
+    Copying takes place as if an intermediate buffer were used, allowing the destination and source to overlap. */
+    // memmove允许dst和src有重叠部分
+    // memcpy如果有重叠部分会产生未定义行为
     memmove(dst,src,bytes);
 }
 
@@ -405,6 +411,8 @@ intset *intsetAdd(intset *is, int64_t value, uint8_t *success) {
     // 如果 value 的编码比整数集合现在的编码要大
     // 那么表示 value 必然可以添加到整数集合中
     // 并且整数集合需要对自身进行升级，才能满足 value 所需的编码
+
+    // 既然这里是用uint8_t的valenc与is->encoding比较，那么证明is->encoding的对应值不会超过uint8_t的最大值
     if (valenc > intrev32ifbe(is->encoding)) {
         /* This always succeeds, so we don't need to curry *success. */
         // T = O(N)

@@ -35,6 +35,7 @@
 typedef struct intset {
     
     // 编码方式
+    // 为什么这里要用uint32_t，为什么每次取值都要调intrev32ifbe来转换，直接取值不行吗？因为网络传输？
     uint32_t encoding;
 
     // 集合包含的元素数量

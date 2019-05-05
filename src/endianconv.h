@@ -45,6 +45,8 @@ uint64_t intrev64(uint64_t v);
 
 /* variants of the function doing the actual convertion only if the target
  * host is big endian */
+/* 其实就是转换对应字节序，感觉命名有点误导，函数名应叫intrev就可以了。
+ * 无论机器是什么端，都保证转换后写入内存正确 */
 #if (BYTE_ORDER == LITTLE_ENDIAN)
 #define memrev16ifbe(p)
 #define memrev32ifbe(p)
