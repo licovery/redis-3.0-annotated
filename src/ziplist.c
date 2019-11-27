@@ -300,6 +300,7 @@ address                                |                          |        |
  *
  * T = O(1)
  */
+ //长度超过UINT16_MAX不记录，需要遍历结点记录
 #define ZIPLIST_INCR_LENGTH(zl,incr) { \
     if (ZIPLIST_LENGTH(zl) < UINT16_MAX) \
         ZIPLIST_LENGTH(zl) = intrev16ifbe(intrev16ifbe(ZIPLIST_LENGTH(zl))+incr); \
@@ -1549,7 +1550,7 @@ unsigned char *ziplistFind(unsigned char *p, unsigned char *vstr, unsigned int v
         ZIP_DECODE_PREVLENSIZE(p, prevlensize);
         ZIP_DECODE_LENGTH(p + prevlensize, encoding, lensize, len);
         q = p + prevlensize + lensize;
-
+        //利用skip跳过结点来访问hash中的key
         if (skipcnt == 0) {
 
             /* Compare current entry with specified entry */

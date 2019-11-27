@@ -453,6 +453,8 @@ struct evictionPoolEntry {
 typedef struct redisDb {
 
     // 数据库键空间，保存着数据库中的所有键值对
+    // 疑惑为什么要用和类型名一样的变量，容易误导人。个人还是觉得类型全部首字母大小，以区别变量和类型
+    // Dict dict 这样比较好
     dict *dict;                 /* The keyspace for this DB */
 
     // 键的过期时间，字典的键为键，字典的值为过期事件 UNIX 时间戳
@@ -694,6 +696,10 @@ struct saveparam {
 };
 
 // 通过复用来减少内存碎片，以及减少操作耗时的共享对象
+
+
+//在createSharedObjects中初始化的全局变量，shared，类型应该都是字符串，用于reply
+
 struct sharedObjectsStruct {
     robj *crlf, *ok, *err, *emptybulk, *czero, *cone, *cnegone, *pong, *space,
     *colon, *nullbulk, *nullmultibulk, *queued,
